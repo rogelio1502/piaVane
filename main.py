@@ -1,0 +1,281 @@
+from sqlite3.dbapi2 import connect
+import sys
+import datetime
+import random
+import sqlite3
+print("Inicio programa")
+try:
+    con = sqlite3.connect('db.db')
+
+    cursor = con.cursor()
+
+    cursor.execute('Create Table Empleado ( numEmpleado int primary key, nombre char(50), apellidoPaterno char(50), apellidoMaterno char(50), fecha_alta char(10)  );')
+
+    con.commit()
+
+    con.close()
+except:
+    pass
+else:
+    print("Base de datos creada...")
+
+
+
+
+class Empleado:
+    
+    def __init__(self, empleado):
+        
+        self.__numEmpleado = empleado["numEmpleado"]
+        self.__nombre = empleado["nombre"]
+        self.__apellidoPaterno = empleado["apellidoPaterno"]
+        self.__apellidoMaterno = empleado["apellidoMaterno"]
+        self.__fecha_alta = empleado["fecha_alta"]
+
+    @staticmethod
+    def updateEmpleado(empleado):
+        try:
+            print(empleado)
+            con = sqlite3.connect('db.db')
+
+            cursor = con.cursor()
+            
+            sql = 'UPDATE Empleado SET nombre = :nombre, apellidoPaterno = :apellidoPaterno, apellidoMaterno = :apellidoMaterno WHERE numEmpleado = :numEmpleado'
+            values = empleado
+
+            cursor.execute(sql,values)
+
+            con.commit()
+            con.close()
+        except sqlite3.Error as e:
+            print(e)
+        else:
+            print("Registro actualizado correctamente.")
+    @staticmethod
+    def getEmpleado(numEmpleado):
+        try:
+            con = sqlite3.connect("db.db")
+            cursor = con.cursor()
+            values = {
+                "id":numEmpleado
+            }
+            sql = "select * from Empleado where numEmpleado = :id"
+            cursor.execute(sql,values)
+            resultado = cursor.fetchone()
+            con.close()
+
+
+        except sqlite3.Error as e:
+            print(e)
+            return False
+        else:
+            if resultado != None:
+                return {"numEmpleado":resultado[0],"nombre":resultado[1],"apellidoPaterno":resultado[2],"apellidoMaterno":resultado[3],"fecha_alta":resultado[4]}
+            return False
+
+    @staticmethod
+    def showEmpleados():
+        try:
+            con = sqlite3.connect('db.db')
+
+            cursor = con.cursor()
+            cursor.execute('SELECT * FROM Empleado')
+            lista = cursor.fetchall()
+
+            con.close()
+        except sqlite3.Error as e:
+            print(e)
+        else:
+            for i in lista:
+                print(i)
+
+    def save(self):
+        try:
+            con = sqlite3.connect('db.db')
+
+            cursor = con.cursor()
+            values = {
+                "id" : self.__numEmpleado,
+                "nombre" : self.__nombre,
+                "apellidop" : self.__apellidoPaterno,
+                "apellidom" : self.__apellidoMaterno,
+                "fechaalt" : self.__fecha_alta
+            }
+            sql = "INSERT INTO Empleado VALUES (:id,:nombre,:apellidop,:apellidom,:fechaalt)"
+            cursor.execute(sql,values)
+            con.commit()
+
+            con.close()
+        except:
+            pass
+        else:
+            print("Registro creado...")
+    
+    @property
+    def numEmpleado(self):
+        return self.__numEmpleado
+
+    @property
+    def nombre(self):
+        return self.__nombre
+    @nombre.setter
+    def nombre(self,nombre):
+        self.__nombre = nombre
+    
+    @property 
+    def apellidoPaterno(self):
+        return self.__apellidoPaterno
+    @apellidoPaterno.setter
+    def apellidoPaterno(self,paterno):
+        self.__apellidoPaterno = paterno
+
+    @property 
+    def apellidoMaterno(self):
+        return self.__apellidoMaterno
+    @apellidoMaterno.setter
+    def apellidoMaterno(self,materno):
+        self.__apellidoMaterno = materno
+
+    
+    def showData(self):
+        print(self.__numEmpleado)
+        print(self.__nombre)
+        print(self.__apellidoPaterno)
+        print(self.__apellidoMaterno)
+        print(self.__fecha_alta)
+        
+
+        
+
+
+
+class Main:
+    def __init__(self):
+        while True:
+            opcion = self.showMenu()
+            if opcion == 1:
+                self.marcarEntrada()
+
+            elif opcion == 2:
+                self.marcarSalida()
+            elif opcion == 3:
+                self.showEmpleados()#done
+            elif opcion == 4:
+                self.altaEmpleado()#done
+            elif opcion == 5:
+                self.modEmpleado()
+            elif opcion == 6:
+                self.exit()#done
+            else:
+                print("Opcion no vàlida intentalo de nuevo...")
+
+
+    def showMenu(self):
+        while True:
+            print("1.-Marcar Entrada\n2.-Marcar Salida\n3.-Listar Empleados\n4.-Alta empleado\n5.-Modificar Empleado\n6.-Salir del programa\nElige una opcion")
+            
+            try:
+                self.opcion = int(input())
+            except:
+                print("valor no valido...")
+            else:
+                return self.opcion
+
+    def showEmpleados(self):
+        Empleado.showEmpleados()
+    def marcarEntrada(self):
+        print("Marcar entrada")
+
+    def marcarSalida(self):
+        print("Marcar Salida")
+    def altaEmpleado(self):
+        data = {
+            "numEmpleado":round(random.random()*100),
+            "nombre":"Rogelio",
+            "apellidoPaterno":"Torres",
+            "apellidoMaterno":"Pasillas",
+            "fecha_alta":"06/09/2021"
+        }
+        e = Empleado(data)
+        
+        e.save()
+        
+        del e
+    def modEmpleado(self):
+        print(20*"*")
+        #print(Empleado.getEmpleado(91147))
+        while True:
+            try:
+                numEmpleado = int(input("Ingrese el numero de empleado... 0 para volver"))
+                data = Empleado.getEmpleado(numEmpleado)
+                if data != False:
+                    e = Empleado(data)
+                    print("se obtuvo empleado")
+
+                else:
+                    if numEmpleado == 0:
+                        return
+                    print("Ningun empleado encontrado...")
+                    continue
+            except sqlite3.Error as e:
+                print(e)
+            except Exception as e:
+                print(e)
+            else:
+                break
+
+        
+        print(20*"*")
+
+        value = self.input("Nombre: ",e.nombre)
+        if value != False:
+            
+            e.nombre = value
+            e.showData()
+        value = self.input("Apellido Paterno: ",e.apellidoPaterno)
+        if value != False:
+            e.apellidoPaterno = value
+
+        value = self.input("Apellido Materno: ",e.apellidoMaterno)
+        if value != False:
+            e.apellidoMaterno = value
+        
+        data = {
+            "numEmpleado" : e.numEmpleado,
+            "nombre" : e.nombre,
+            "apellidoPaterno" : e.apellidoPaterno,
+            "apellidoMaterno" : e.apellidoMaterno
+        }
+        Empleado.updateEmpleado(data)
+
+        
+        
+
+        
+    def input(self,label,value):
+        print(label,value,'0 para dejar el mismo')
+        new_value = input(f"Nuevo {label}: ")
+        if new_value == "0":
+            return False
+        return new_value
+            
+        
+        
+        
+    def exit(self):
+        print("Saliendo del programa")
+        sys.exit()
+    
+    
+
+
+
+
+n = Main()
+
+
+#no he implementado de forma correcta la interfaz de alta de empleado
+#me quede actualizando los datos de un empleado
+
+
+
