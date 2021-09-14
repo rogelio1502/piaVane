@@ -9,8 +9,10 @@ try:
 
     cursor = con.cursor()
 
-    cursor.execute('Create Table Empleado ( numEmpleado int primary key, nombre char(50), apellidoPaterno char(50), apellidoMaterno char(50), fecha_alta char(10)  );')
-
+    cursor.execute("""Create Table Empleado ( numEmpleado int primary key, nombre char(50), apellidoPaterno char(50), apellidoMaterno char(50), fecha_alta date  );
+                    
+                    """)
+    cursor.execute("Create Table EmpleadoAsistencia (numEmpleado int, fecha date, movimiento char(15), foreign key (numEmpleado) references Empleado(numEmpleado));")
     con.commit()
 
     con.close()
@@ -189,12 +191,16 @@ class Main:
     def marcarSalida(self):
         print("Marcar Salida")
     def altaEmpleado(self):
+        nombre = self.inputAdd("Nombre")
+        paterno = self.inputAdd("Apellido Paterno")
+        materno = self.inputAdd("Apellido Materno")
+        fecha = datetime.date.today()
         data = {
             "numEmpleado":round(random.random()*100),
-            "nombre":"Rogelio",
-            "apellidoPaterno":"Torres",
-            "apellidoMaterno":"Pasillas",
-            "fecha_alta":"06/09/2021"
+            "nombre":nombre,
+            "apellidoPaterno":paterno,
+            "apellidoMaterno":materno,
+            "fecha_alta":fecha
         }
         e = Empleado(data)
         
@@ -227,16 +233,16 @@ class Main:
         
         print(20*"*")
 
-        value = self.input("Nombre: ",e.nombre)
+        value = self.inputEdit("Nombre: ",e.nombre)
         if value != False:
             
             e.nombre = value
             e.showData()
-        value = self.input("Apellido Paterno: ",e.apellidoPaterno)
+        value = self.inputEdit("Apellido Paterno: ",e.apellidoPaterno)
         if value != False:
             e.apellidoPaterno = value
 
-        value = self.input("Apellido Materno: ",e.apellidoMaterno)
+        value = self.inputEdit("Apellido Materno: ",e.apellidoMaterno)
         if value != False:
             e.apellidoMaterno = value
         
@@ -252,12 +258,20 @@ class Main:
         
 
         
-    def input(self,label,value):
-        print(label,value,'0 para dejar el mismo')
-        new_value = input(f"Nuevo {label}: ")
+    def inputEdit(self,label,value):
+        print(label,value,'0 para dejar el mismo\n')
+        new_value = input(f"Nuevo {label}:\n")
         if new_value == "0":
             return False
         return new_value
+    
+    def inputAdd(self,label):
+        while True:
+            value = input(f'Ingrese el {label}\n')
+            if len(value) > 0:
+                return value
+            else:
+                print(f"Ingrese el {label}")
             
         
         
