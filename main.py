@@ -49,6 +49,30 @@ class Empleado:
         self.__fecha_alta = empleado["fecha_alta"]
 
     @staticmethod
+    def deleteEmpleado(numEmpleado):
+        
+        try:
+            con = sqlite3.connect('db.db')
+
+            cursor = con.cursor()
+            
+
+            sql = 'DELETE FROM Empleado WHERE numEmpleado = :numEmpleado'
+            values = {
+                "numEmpleado":numEmpleado
+            }
+
+            cursor.execute(sql,values)
+
+            con.commit()
+            con.close()
+        except sqlite3.Error as e:
+            print("Error al eliminar usuario")
+            print(e)
+        else:
+            print("Usuario Eliminado con exito.")
+
+    @staticmethod
     def updateEmpleado(empleado):
         try:
             print(empleado)
@@ -87,6 +111,7 @@ class Empleado:
         else:
             if resultado != None:
                 return {"numEmpleado":resultado[0],"nombre":resultado[1],"apellidoPaterno":resultado[2],"apellidoMaterno":resultado[3],"fecha_alta":resultado[4]}
+            print("Empleado no existe...")
             return False
 
     @staticmethod
@@ -224,6 +249,9 @@ class Main:
             elif opcion == 5:
                 self.modEmpleado()
             elif opcion == 6:
+                self.bajaEmpleado()#done
+
+            elif opcion == 0:
                 self.exit()#done
             else:
                 print("Opcion no vàlida intentalo de nuevo...")
@@ -231,7 +259,7 @@ class Main:
 
     def showMenu(self):
         while True:
-            print("1.-Marcar Entrada\n2.-Marcar Salida\n3.-Listar Empleados\n4.-Alta empleado\n5.-Modificar Empleado\n6.-Salir del programa\nElige una opcion")
+            print("1.-Marcar Entrada\n2.-Marcar Salida\n3.-Listar Empleados\n4.-Alta empleado\n5.-Modificar Empleado\n6.-Eliminar Empleado\n0.-Salir del programa\nElige una opcion")
             
             try:
                 self.opcion = int(input())
@@ -252,7 +280,6 @@ class Main:
             else:
                 Checador.check(empleado,"Entrada")
                 break
-
 
     def marcarSalida(self):
         print("Marcar Salida")
@@ -326,10 +353,49 @@ class Main:
             "apellidoPaterno" : e.apellidoPaterno,
             "apellidoMaterno" : e.apellidoMaterno
         }
-        Empleado.updateEmpleado(data)
+        while True:
+            print(f"Numero Empleado : {data['numEmpleado']}\nNombre : {data['nombre']}\nApellidos : {data['apellidoPaterno']} {data['apellidoMaterno']}")
+            editar = input("Desea guardar los cambios? <1 si - 0 no>")
+            if editar in ("1","0"):
+                if editar == "1":
+                    Empleado.updateEmpleado(data)
+                    break
+                elif editar == "0":
+                    print("Operacion cancelada...")
+                    break
+            else:
+                print("Opcion no válida")
 
         
-        
+    def bajaEmpleado(self):
+        while True:
+            print("Eliminar Usuario")
+            try:
+                numEmpleado = int(input("Numero de Empleado: <0 para volver>\n"))
+                if numEmpleado == 0:
+                    return
+            except:
+                print("Valor no valido...")
+            else:
+                empleado = Empleado.getEmpleado(numEmpleado)
+                if empleado != False:
+                    while True:
+                        print("Desea eliminar al empleado con los siguientes datos: <1 si - 0 no>")
+                        print(f"No. Empleado: {empleado['numEmpleado']}\nNombre Completo: {empleado['nombre']} {empleado['apellidoPaterno']} {empleado['apellidoMaterno']}")
+                        delete = input()
+                        if delete in ("1","0"):
+                            if delete == "1":
+                                Empleado.deleteEmpleado(numEmpleado)
+                                break
+                            elif delete == "0":
+                                print("Operacion cancelada.")
+                                return
+
+                        
+                        else:
+                            print("Opcion no valida intentalo de nuevo por favor")
+
+
 
         
     def inputEdit(self,label,value):
