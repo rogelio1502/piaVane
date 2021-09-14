@@ -12,14 +12,28 @@ try:
     cursor.execute("""Create Table Empleado ( numEmpleado int primary key, nombre char(50), apellidoPaterno char(50), apellidoMaterno char(50), fecha_alta date  );
                     
                     """)
-    cursor.execute("Create Table EmpleadoAsistencia (numEmpleado int, fecha date, movimiento char(15), foreign key (numEmpleado) references Empleado(numEmpleado));")
     con.commit()
 
     con.close()
 except:
     pass
 else:
-    print("Base de datos creada...")
+    try:
+        con = sqlite3.connect('db.db')
+
+        cursor = con.cursor()
+
+        cursor.execute("PRAGMA foreign_keys = ON;")
+  
+        cursor.execute("Create Table EmpleadoAsistencia (numEmpleado int, fecha date, movimiento char(15), CONSTRAINT fk_column FOREIGN KEY(numEmpleado) REFERENCES Empleado(numEmpleado));")
+        con.commit()
+
+        con.close()
+    except sqlite3.Error as e:
+        print(e)
+    else:
+        print("tablas creadas")
+    
 
 
 
@@ -147,19 +161,62 @@ class Empleado:
         print(self.__fecha_alta)
         
 
+class Checador:
+    
+    @staticmethod
+    def check(numEmpleado,mov):
+        data = {
+            "numEmpleado":numEmpleado,
+            "fecha":datetime.date.today(),
+            "mov":mov
+        }
+        try:
+            values = data
+            con = sqlite3.connect('db.db')
+            cursor = con.cursor()
+            cursor.execute("PRAGMA foreign_keys = ON;")
+
+            sql = "SELECT * FROM EmpleadoAsistencia WHERE numEmpleado = :numEmpleado AND fecha = :fecha AND movimiento = :mov"
+            cursor.execute(sql,values)
+            resultados = cursor.fetchall()
+            con.close()
+
+        except sqlite3.Error as e:
+            print("Error al verificar los datos...")
+            print(e)
+            return
+        else:
+            #print(resultados)
+            if len(resultados)<1:
+                try:
+                    value = data
+                    con = sqlite3.connect('db.db')
+                    cursor = con.cursor()
+                    cursor.execute("PRAGMA foreign_keys = ON;")
+
+                    sql = "INSERT INTO EmpleadoAsistencia (numEmpleado,fecha,movimiento) VALUES (:numEmpleado,:fecha,:mov)"
+                    cursor.execute(sql,value)
+                    con.commit()
+                    con.close()
+                except:
+                    print("Error al marcar asistencia")
+                else:
+                    print(f"{mov} Marcada con exito.")
+            else:
+                print(f"Ya se ha registrado la {mov} del dia de hoy")
+       
+
         
-
-
 
 class Main:
     def __init__(self):
         while True:
             opcion = self.showMenu()
             if opcion == 1:
-                self.marcarEntrada()
+                self.marcarEntrada()#done
 
             elif opcion == 2:
-                self.marcarSalida()
+                self.marcarSalida()#done
             elif opcion == 3:
                 self.showEmpleados()#done
             elif opcion == 4:
@@ -187,9 +244,26 @@ class Main:
         Empleado.showEmpleados()
     def marcarEntrada(self):
         print("Marcar entrada")
+        while True:
+            try:
+                empleado = int(input("Numero de Empleado:\n"))
+            except:
+                print("Valor no valido intentalo de nuevo.")
+            else:
+                Checador.check(empleado,"Entrada")
+                break
+
 
     def marcarSalida(self):
         print("Marcar Salida")
+        while True:
+            try:
+                empleado = int(input("Numero de Empleado:\n"))
+            except:
+                print("Valor no valido intentalo de nuevo.")
+            else:
+                Checador.check(empleado,"Salida")
+                break
     def altaEmpleado(self):
         nombre = self.inputAdd("Nombre")
         paterno = self.inputAdd("Apellido Paterno")
