@@ -3,108 +3,64 @@ import sys
 import datetime
 import random
 import sqlite3
-print("Inicio programa")
-try:
-    con = sqlite3.connect('db.db')
 
-    cursor = con.cursor()
-
-    cursor.execute("""Create Table Empleado ( numEmpleado int primary key, nombre char(50), apellidoPaterno char(50), apellidoMaterno char(50), fecha_alta date  );
-                    
-                    """)
-    con.commit()
-
-    con.close()
-except:
-    pass
-else:
-    try:
-        con = sqlite3.connect('db.db')
-
-        cursor = con.cursor()
-
-        cursor.execute("PRAGMA foreign_keys = ON;")
-  
-        cursor.execute("Create Table EmpleadoAsistencia (numEmpleado int, fecha date, movimiento char(15), CONSTRAINT fk_column FOREIGN KEY(numEmpleado) REFERENCES Empleado(numEmpleado));")
-        con.commit()
-
-        con.close()
-    except sqlite3.Error as e:
-        print(e)
-    else:
-        print("tablas creadas")
+class Conexion:
     
-
-
-
-
-class Empleado:
-    
-    def __init__(self, empleado):
-        
-        self.__numEmpleado = empleado["numEmpleado"]
-        self.__nombre = empleado["nombre"]
-        self.__apellidoPaterno = empleado["apellidoPaterno"]
-        self.__apellidoMaterno = empleado["apellidoMaterno"]
-        self.__fecha_alta = empleado["fecha_alta"]
-
-    @staticmethod
-    def deleteEmpleado(numEmpleado):
-        
+    def open(self):
         try:
-            con = sqlite3.connect('db.db')
+            self.con = sqlite3.connect('db.db')
+            self.cursor = self.con.cursor()
+        except sqlite3.Error as e:
+            print(e)
+        else:
+            pass
+            #print("Conexion con exito...")
 
-            cursor = con.cursor()
-            
+    def createTables(self):
+        try:
+            self.open()
+            self.cursor.execute("""Create Table Empleado ( numEmpleado int primary key, nombre char(50), apellidoPaterno char(50), apellidoMaterno char(50), fecha_alta date  );  
+                    """)
+            self.con.commit()
+            self.cursor.execute("PRAGMA foreign_keys = ON;")
+  
+            self.cursor.execute("Create Table EmpleadoAsistencia (numEmpleado int, fecha date, movimiento char(15), CONSTRAINT fk_column FOREIGN KEY(numEmpleado) REFERENCES Empleado(numEmpleado));")
+            self.con.commit()
+            self.con.close()
+        except sqlite3.Error as e:
+            if "already exists" in str(e):
+                pass
+            else:
+                print(type(e))
+        else:
+            print("Tablas creadas con exito..")
 
+    def deleteEmpleado(self,numEmpleado):
+        try:
+            self.open()
             sql = 'DELETE FROM Empleado WHERE numEmpleado = :numEmpleado'
             values = {
                 "numEmpleado":numEmpleado
             }
-
-            cursor.execute(sql,values)
-
-            con.commit()
-            con.close()
+            self.cursor.execute(sql,values)
+            self.con.commit()
+            self.con.close()   
         except sqlite3.Error as e:
             print("Error al eliminar usuario")
             print(e)
         else:
             print("Usuario Eliminado con exito.")
 
-    @staticmethod
-    def updateEmpleado(empleado):
+    def getEmpledo(self,numEmpleado):
         try:
-            print(empleado)
-            con = sqlite3.connect('db.db')
-
-            cursor = con.cursor()
-            
-            sql = 'UPDATE Empleado SET nombre = :nombre, apellidoPaterno = :apellidoPaterno, apellidoMaterno = :apellidoMaterno WHERE numEmpleado = :numEmpleado'
-            values = empleado
-
-            cursor.execute(sql,values)
-
-            con.commit()
-            con.close()
-        except sqlite3.Error as e:
-            print(e)
-        else:
-            print("Registro actualizado correctamente.")
-    @staticmethod
-    def getEmpleado(numEmpleado):
-        try:
-            con = sqlite3.connect("db.db")
-            cursor = con.cursor()
+            self.open()
             values = {
                 "id":numEmpleado
             }
             sql = "select * from Empleado where numEmpleado = :id"
-            cursor.execute(sql,values)
-            resultado = cursor.fetchone()
-            con.close()
-
-
+            self.cursor.execute(sql,values)
+            resultado = self.cursor.fetchone()
+            self.con.close()
         except sqlite3.Error as e:
             print(e)
             return False
@@ -113,45 +69,103 @@ class Empleado:
                 return {"numEmpleado":resultado[0],"nombre":resultado[1],"apellidoPaterno":resultado[2],"apellidoMaterno":resultado[3],"fecha_alta":resultado[4]}
             print("Empleado no existe...")
             return False
-
-    @staticmethod
-    def showEmpleados():
+    def updateEmpledo(self,empleado):
         try:
-            con = sqlite3.connect('db.db')
-
-            cursor = con.cursor()
-            cursor.execute('SELECT * FROM Empleado')
-            lista = cursor.fetchall()
-
-            con.close()
+            self.open()
+            sql = 'UPDATE Empleado SET nombre = :nombre, apellidoPaterno = :apellidoPaterno, apellidoMaterno = :apellidoMaterno WHERE numEmpleado = :numEmpleado'
+            values = empleado
+            self.cursor.execute(sql,values)
+            self.con.commit()
+            self.con.close()
         except sqlite3.Error as e:
             print(e)
         else:
+            print("Registro actualizado correctamente.")
+    
+    def showEmpleados(self):
+        try:
+            self.open()
+            self.cursor.execute('SELECT * FROM Empleado')
+            lista = self.cursor.fetchall()
+            self.con.close()
+        except sqlite3.Error as e:
+            print(e)
+        else:
+            return lista
+    def saveEmpleado(self,data):
+        try:
+            self.open()
+            values = data
+            sql = "INSERT INTO Empleado VALUES (:id,:nombre,:apellidop,:apellidom,:fechaalt)"
+            self.cursor.execute(sql,values)
+            self.con.commit()
+            self.con.close()
+        except:
+            pass
+        else:
+            print("Registro creado...")
+    def checkChecked(self,data):
+        try:
+            values = data
+            self.open()
+            self.cursor.execute("PRAGMA foreign_keys = ON;")
+            sql = "SELECT * FROM EmpleadoAsistencia WHERE numEmpleado = :numEmpleado AND fecha = :fecha AND movimiento = :mov"
+            self.cursor.execute(sql,values)
+            resultados = self.cursor.fetchall()
+            self.con.close()
+        except sqlite3.Error as e:
+            print("Error al verificar los datos...")
+            print(e)
+            return False
+        else:
+            return resultados
+    def check(self,data):
+        try:
+            value = data
+            self.open()
+            self.cursor.execute("PRAGMA foreign_keys = ON;")
+            sql = "INSERT INTO EmpleadoAsistencia (numEmpleado,fecha,movimiento) VALUES (:numEmpleado,:fecha,:mov)"
+            self.cursor.execute(sql,value)
+            self.con.commit()
+            self.con.close()
+        except:
+            print("Error al marcar asistencia")
+        else:
+            print(f"{data['mov']} Marcada con exito.")
+        
+        
+class Empleado:
+    def __init__(self, empleado):
+        
+        self.__numEmpleado = empleado["numEmpleado"]
+        self.__nombre = empleado["nombre"]
+        self.__apellidoPaterno = empleado["apellidoPaterno"]
+        self.__apellidoMaterno = empleado["apellidoMaterno"]
+        self.__fecha_alta = empleado["fecha_alta"]
+    @staticmethod
+    def deleteEmpleado(numEmpleado,c):
+        c.deleteEmpleado(numEmpleado)  
+    @staticmethod
+    def getEmpleado(numEmpleado,c):
+        return c.getEmpledo(numEmpleado)
+    @staticmethod
+    def updateEmpleado(empleado,c):
+        c.updateEmpledo(empleado)
+    @staticmethod
+    def showEmpleados(c):
+        lista = c.showEmpleados()
+        if lista:
             for i in lista:
                 print(i)
-
-    def save(self):
-        try:
-            con = sqlite3.connect('db.db')
-
-            cursor = con.cursor()
-            values = {
+    def save(self,c):
+        values = {
                 "id" : self.__numEmpleado,
                 "nombre" : self.__nombre,
                 "apellidop" : self.__apellidoPaterno,
                 "apellidom" : self.__apellidoMaterno,
                 "fechaalt" : self.__fecha_alta
-            }
-            sql = "INSERT INTO Empleado VALUES (:id,:nombre,:apellidop,:apellidom,:fechaalt)"
-            cursor.execute(sql,values)
-            con.commit()
-
-            con.close()
-        except:
-            pass
-        else:
-            print("Registro creado...")
-    
+                }
+        c.saveEmpleado(values)
     @property
     def numEmpleado(self):
         return self.__numEmpleado
@@ -189,44 +203,17 @@ class Empleado:
 class Checador:
     
     @staticmethod
-    def check(numEmpleado,mov):
+    def check(numEmpleado,mov,c):
         data = {
             "numEmpleado":numEmpleado,
             "fecha":datetime.date.today(),
             "mov":mov
         }
-        try:
-            values = data
-            con = sqlite3.connect('db.db')
-            cursor = con.cursor()
-            cursor.execute("PRAGMA foreign_keys = ON;")
-
-            sql = "SELECT * FROM EmpleadoAsistencia WHERE numEmpleado = :numEmpleado AND fecha = :fecha AND movimiento = :mov"
-            cursor.execute(sql,values)
-            resultados = cursor.fetchall()
-            con.close()
-
-        except sqlite3.Error as e:
-            print("Error al verificar los datos...")
-            print(e)
-            return
-        else:
-            #print(resultados)
-            if len(resultados)<1:
-                try:
-                    value = data
-                    con = sqlite3.connect('db.db')
-                    cursor = con.cursor()
-                    cursor.execute("PRAGMA foreign_keys = ON;")
-
-                    sql = "INSERT INTO EmpleadoAsistencia (numEmpleado,fecha,movimiento) VALUES (:numEmpleado,:fecha,:mov)"
-                    cursor.execute(sql,value)
-                    con.commit()
-                    con.close()
-                except:
-                    print("Error al marcar asistencia")
-                else:
-                    print(f"{mov} Marcada con exito.")
+        checadas = c.checkChecked(data)
+        #print(checadas)
+        if checadas != False:
+            if len(checadas)<1:
+                c.check(data)
             else:
                 print(f"Ya se ha registrado la {mov} del dia de hoy")
        
@@ -234,19 +221,26 @@ class Checador:
         
 
 class Main:
-    def __init__(self):
+    def __init__(self,conexion):
+        self.con = conexion
         while True:
+            print(SEPARADOR)
             opcion = self.showMenu()
             if opcion == 1:
+                print(SEPARADOR)
                 self.marcarEntrada()#done
 
             elif opcion == 2:
+                print(SEPARADOR)
                 self.marcarSalida()#done
             elif opcion == 3:
+                print(SEPARADOR)
                 self.showEmpleados()#done
             elif opcion == 4:
+                print(SEPARADOR)
                 self.altaEmpleado()#done
             elif opcion == 5:
+                print(SEPARADOR)
                 self.modEmpleado()
             elif opcion == 6:
                 self.bajaEmpleado()#done
@@ -269,27 +263,31 @@ class Main:
                 return self.opcion
 
     def showEmpleados(self):
-        Empleado.showEmpleados()
+        Empleado.showEmpleados(self.con)
     def marcarEntrada(self):
         print("Marcar entrada")
         while True:
             try:
-                empleado = int(input("Numero de Empleado:\n"))
+                empleado = int(input("Numero de Empleado: <0 para salir>\n"))
             except:
                 print("Valor no valido intentalo de nuevo.")
             else:
-                Checador.check(empleado,"Entrada")
+                if empleado == 0:
+                    return
+                Checador.check(empleado,"Entrada",self.con)
                 break
 
     def marcarSalida(self):
         print("Marcar Salida")
         while True:
             try:
-                empleado = int(input("Numero de Empleado:\n"))
+                empleado = int(input("Numero de Empleado: <0 para salir>\n"))
             except:
                 print("Valor no valido intentalo de nuevo.")
             else:
-                Checador.check(empleado,"Salida")
+                if empleado == 0:
+                    return
+                Checador.check(empleado,"Salida",self.con)
                 break
     def altaEmpleado(self):
         nombre = self.inputAdd("Nombre")
@@ -305,7 +303,7 @@ class Main:
         }
         e = Empleado(data)
         
-        e.save()
+        e.save(self.con)
         
         del e
     def modEmpleado(self):
@@ -358,7 +356,7 @@ class Main:
             editar = input("Desea guardar los cambios? <1 si - 0 no>")
             if editar in ("1","0"):
                 if editar == "1":
-                    Empleado.updateEmpleado(data)
+                    Empleado.updateEmpleado(data,self.con)
                     break
                 elif editar == "0":
                     print("Operacion cancelada...")
@@ -377,7 +375,7 @@ class Main:
             except:
                 print("Valor no valido...")
             else:
-                empleado = Empleado.getEmpleado(numEmpleado)
+                empleado = Empleado.getEmpleado(numEmpleado,self.con)
                 if empleado != False:
                     while True:
                         print("Desea eliminar al empleado con los siguientes datos: <1 si - 0 no>")
@@ -385,8 +383,8 @@ class Main:
                         delete = input()
                         if delete in ("1","0"):
                             if delete == "1":
-                                Empleado.deleteEmpleado(numEmpleado)
-                                break
+                                Empleado.deleteEmpleado(numEmpleado,self.con)
+                                return
                             elif delete == "0":
                                 print("Operacion cancelada.")
                                 return
@@ -422,14 +420,23 @@ class Main:
     
     
 
+SEPARADOR = "*"*50
+print(SEPARADOR)
+print("Iniciando programa")
 
 
 
-n = Main()
+c = Conexion()
+c.open()
+c.createTables()
+n = Main(c)
+
+print(SEPARADOR)
+print("Fin del programa")
 
 
-#no he implementado de forma correcta la interfaz de alta de empleado
-#me quede actualizando los datos de un empleado
+
+
 
 
 
